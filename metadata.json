@@ -1,0 +1,7 @@
+{
+  "name": "Biblioteca JIMUI",
+  "description": "Uma biblioteca digital offline-first com gestão administrativa para a Comissão de Cultura da JIMUI.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
