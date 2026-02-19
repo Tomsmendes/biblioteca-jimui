@@ -47,8 +47,12 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl shadow-green-100 overflow-hidden border border-gray-100 p-8 md:p-12 animate-in zoom-in-95 duration-500">
         <div className="text-center mb-10">
-          <div className="w-20 h-20 bg-[#0F9D58] rounded-3xl mx-auto flex items-center justify-center text-white text-4xl font-black mb-6 shadow-xl shadow-green-100">
-            J
+          <div className="w-20 h-20 bg-white rounded-3xl mx-auto flex items-center justify-center shadow-2xl mb-6 overflow-hidden">
+            <img 
+              src="/biblioteca-jimui/logo.jpeg" 
+              alt="Logo JIMUA" 
+              className="w-full h-full object-cover"
+            />
           </div>
           <h1 className="text-3xl font-black text-gray-900 tracking-tight">Biblioteca JIMUI</h1>
           <p className="text-gray-400 font-medium mt-2">

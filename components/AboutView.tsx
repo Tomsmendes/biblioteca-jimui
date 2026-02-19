@@ -9,9 +9,14 @@ const AboutView: React.FC = () => {
         <div className="bg-[#0F9D58] p-10 text-white text-center relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
           <div className="relative z-10">
-            <div className="w-20 h-20 bg-white rounded-3xl mx-auto flex items-center justify-center shadow-2xl mb-6">
-              <span className="text-[#0F9D58] text-4xl font-black">J</span>
-            </div>
+            <div className="w-20 h-20 bg-white rounded-3xl mx-auto flex items-center justify-center shadow-2xl mb-6 overflow-hidden">
+  <img 
+    src="/biblioteca-jimui/logo.jpeg" 
+    alt="Logo JIMUA" 
+    className="w-full h-full object-cover"
+  />
+</div>
+
             <h2 className="text-4xl font-black mb-2">{APP_INFO.name}</h2>
             <p className="text-green-100 font-medium opacity-90">Versão {APP_INFO.version}</p>
           </div>

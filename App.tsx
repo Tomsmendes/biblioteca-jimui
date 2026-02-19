@@ -118,7 +118,13 @@ const App: React.FC = () => {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white border-b border-gray-100 shadow-sm px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => setView('home')}>
-          <div className="w-10 h-10 bg-[#0F9D58] rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-green-100">J</div>
+          <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-green-100">
+            <img 
+              src="/biblioteca-jimui/logo.jpeg" 
+              alt="Logo JIMUA" 
+              className="w-full h-full object-cover"
+            />
+          </div>
           <h1 className="text-xl font-black text-gray-800 tracking-tight">
             Biblioteca <span className="text-[#FF9800]">JIMUI</span>
           </h1>
