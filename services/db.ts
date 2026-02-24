@@ -63,6 +63,12 @@ export const db = {
 
   // ---------------- USUÁRIOS ----------------
 
+  async getUser(id: string): Promise<User | null> {
+    const ref = doc(firestore, "users", id);
+    const snapshot = await getDoc(ref);
+    return snapshot.exists() ? (snapshot.data() as User) : null;
+  },
+
   async register(
     name: string,
     email: string,

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Book, Category, User, UserRole } from './types';
 import { db } from './services/db';
@@ -11,10 +10,20 @@ import AuthView from './components/AuthView';
 import HistoryView from './components/HistoryView';
 import ReaderView from './components/ReaderView';
 
+const SESSION_KEY = 'biblioteca_jimui_user';
+
 const App: React.FC = () => {
   const [books, setBooks] = useState<Book[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    // Recupera sessão guardada ao iniciar
+    try {
+      const saved = localStorage.getItem(SESSION_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -27,11 +36,9 @@ const App: React.FC = () => {
   useEffect(() => {
     const initApp = async () => {
       await db.init();
-      const loadedUser = await db.getCurrentUser();
       const loadedBooks = await db.getBooks();
       const loadedCats = await db.getCategories();
-      
-      setUser(loadedUser);
+
       setBooks(loadedBooks);
       setCategories(loadedCats);
       setIsAppReady(true);
@@ -50,6 +57,20 @@ const App: React.FC = () => {
     };
   }, []);
 
+  // Sempre que o utilizador mudar, atualiza o localStorage
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    } else {
+      localStorage.removeItem(SESSION_KEY);
+    }
+  }, [user]);
+
+  const handleAuthSuccess = (loggedUser: User) => {
+    setUser(loggedUser);
+    localStorage.setItem(SESSION_KEY, JSON.stringify(loggedUser));
+  };
+
   const handleSync = async () => {
     setIsSyncing(true);
     setTimeout(async () => {
@@ -62,6 +83,7 @@ const App: React.FC = () => {
   const handleLogout = async () => {
     await db.logout();
     setUser(null);
+    localStorage.removeItem(SESSION_KEY);
     setView('home');
   };
 
@@ -98,17 +120,17 @@ const App: React.FC = () => {
   };
 
   const refreshUserData = async () => {
-    const updated = await db.getCurrentUser();
-    setUser(updated);
+    if (!user) return;
+    const updated = await db.getUser(user.id);
+    if (updated) setUser(updated);
   };
 
   if (!isAppReady) return null;
 
   if (!user) {
-    return <AuthView onAuthSuccess={setUser} />;
+    return <AuthView onAuthSuccess={handleAuthSuccess} />;
   }
 
-  // Se estiver lendo, mostrar o ReaderView em tela cheia
   if (readingBook) {
     return <ReaderView book={readingBook} onBack={() => setReadingBook(null)} />;
   }
@@ -133,7 +155,7 @@ const App: React.FC = () => {
         <div className="flex items-center gap-2">
           <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-gray-50 rounded-full text-[10px] font-bold text-gray-400">
             <ICONS.Wifi online={isOnline} />
-            {isOnline ? 'SINCRO' : 'OFFLINE'}
+            {isOnline ? (isSyncing ? 'SINCRONIZANDO...' : 'ONLINE') : 'OFFLINE'}
           </div>
           <button 
             onClick={() => setView('about')}

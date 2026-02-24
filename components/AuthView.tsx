@@ -33,8 +33,8 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
           setError('Por favor, preencha todos os campos.');
         } else if (password !== confirmPassword) {
           setError('As senhas não coincidem.');
-        } else if (password.length < 6) {
-          setError('A senha deve ter pelo menos 6 caracteres.');
+        } else if (password.length < 4) {
+          setError('A senha deve ter pelo menos 4 caracteres.');
         } else {
           const newUser = await db.register(name, email, password);
           onAuthSuccess(newUser);

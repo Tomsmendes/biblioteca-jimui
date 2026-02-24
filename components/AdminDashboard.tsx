@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Book, Category } from '../types';
 import { db } from '../services/db';
@@ -14,6 +13,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ books, categories, onUp
   const [activeTab, setActiveTab] = useState<'books' | 'categories'>('books');
   const [isAddingBook, setIsAddingBook] = useState(false);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [newCatName, setNewCatName] = useState('');
   
   const [newBook, setNewBook] = useState<Partial<Book>>({
@@ -22,27 +23,60 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ books, categories, onUp
     category: categories[0]?.name || '',
     summary: '',
     coverUrl: `https://picsum.photos/seed/${Math.random()}/400/600`,
-    pdfUrl: 'https://archive.org',
+    pdfUrl: '',
   });
 
   const handleAddBook = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newBook.title || !newBook.author) return;
 
-    const bookToAdd: Book = {
-      id: Date.now().toString(),
-      title: newBook.title,
-      author: newBook.author,
-      category: newBook.category || 'Geral',
-      summary: newBook.summary || '',
-      coverUrl: newBook.coverUrl || '',
-      pdfUrl: newBook.pdfUrl,
-      createdAt: Date.now(),
-    };
+    setIsSaving(true);
+    try {
+      const bookToAdd: Book = {
+        id: '',
+        title: newBook.title,
+        author: newBook.author,
+        category: newBook.category || 'Geral',
+        summary: newBook.summary || '',
+        coverUrl: newBook.coverUrl || '',
+        pdfUrl: newBook.pdfUrl || '',
+        createdAt: Date.now(),
+      };
 
-    await db.saveBook(bookToAdd);
-    setIsAddingBook(false);
-    onUpdate();
+      await db.saveBook(bookToAdd);
+      setIsAddingBook(false);
+      setNewBook({
+        title: '',
+        author: '',
+        category: categories[0]?.name || '',
+        summary: '',
+        coverUrl: `https://picsum.photos/seed/${Math.random()}/400/600`,
+        pdfUrl: '',
+      });
+      onUpdate();
+    } catch (err) {
+      console.error('Erro ao salvar livro:', err);
+      alert('Erro ao salvar livro. Verifica a consola (F12).');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleEditBook = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingBook) return;
+
+    setIsSaving(true);
+    try {
+      await db.saveBook(editingBook);
+      setEditingBook(null);
+      onUpdate();
+    } catch (err) {
+      console.error('Erro ao editar livro:', err);
+      alert('Erro ao editar livro. Verifica a consola (F12).');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleAddCategory = async (e: React.FormEvent) => {
@@ -54,10 +88,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ books, categories, onUp
     onUpdate();
   };
 
-  const deleteBook = async (id: string) => {
-    if (confirm('Deseja realmente remover este livro?')) {
-      await db.deleteBook(id);
-      onUpdate();
+  const deleteBook = async (book: Book) => {
+    console.log('Apagar livro — ID:', book.id, '| Título:', book.title);
+
+    if (!book.id) {
+      alert('Este livro não tem ID válido — não pode ser apagado. Verifica a consola (F12).');
+      return;
+    }
+
+    if (confirm(`Deseja realmente remover "${book.title}"?`)) {
+      try {
+        await db.deleteBook(book.id);
+        onUpdate();
+      } catch (err) {
+        console.error('Erro ao apagar livro:', err);
+        alert('Erro ao apagar. Verifica a consola (F12).');
+      }
     }
   };
 
@@ -119,6 +165,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ books, categories, onUp
                         <div>
                           <p className="font-black text-gray-800 line-clamp-1">{book.title}</p>
                           <p className="text-xs text-gray-400 font-bold">{book.author}</p>
+                          {import.meta.env.DEV && (
+                            <p className="text-[9px] text-gray-200 font-mono">ID: {book.id || '⚠️ SEM ID'}</p>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -128,12 +177,36 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ books, categories, onUp
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button onClick={() => deleteBook(book.id)} className="p-2.5 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button 
+                          onClick={() => setEditingBook(book)} 
+                          className="p-2.5 text-blue-300 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"
+                          title="Editar"
+                        >
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button 
+                          onClick={() => deleteBook(book)} 
+                          className="p-2.5 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                          title="Apagar"
+                        >
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
+                {books.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="px-6 py-12 text-center text-gray-300 font-bold">
+                      Nenhum livro cadastrado ainda.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -154,7 +227,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ books, categories, onUp
         </div>
       )}
 
-      {/* Book Form Modal */}
+      {/* Modal Adicionar Livro */}
       {isAddingBook && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="bg-white w-full max-w-lg rounded-[3rem] p-10 shadow-2xl animate-in zoom-in-95 duration-200">
@@ -177,7 +250,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ books, categories, onUp
                 </div>
               </div>
               <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-2">URL do PDF (Simulação)</label>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-2">URL do PDF</label>
                 <input className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-[#0F9D58] outline-none" value={newBook.pdfUrl} onChange={e => setNewBook({...newBook, pdfUrl: e.target.value})} />
               </div>
               <div>
@@ -186,14 +259,57 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ books, categories, onUp
               </div>
               <div className="flex gap-4 pt-4">
                 <button type="button" onClick={() => setIsAddingBook(false)} className="flex-1 py-4 font-black text-gray-400 hover:text-gray-600 transition-colors">CANCELAR</button>
-                <button type="submit" className="flex-1 bg-[#0F9D58] text-white py-4 rounded-2xl font-black shadow-xl shadow-green-100 hover:scale-[1.02] active:scale-95 transition-all">SALVAR LIVRO</button>
+                <button type="submit" disabled={isSaving} className="flex-1 bg-[#0F9D58] text-white py-4 rounded-2xl font-black shadow-xl shadow-green-100 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50">
+                  {isSaving ? 'SALVANDO...' : 'SALVAR LIVRO'}
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Category Form Modal */}
+      {/* Modal Editar Livro */}
+      {editingBook && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-lg rounded-[3rem] p-10 shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-2xl font-black mb-8 text-gray-900 tracking-tight">Editar Livro</h3>
+            <form onSubmit={handleEditBook} className="space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-2">Título do Livro</label>
+                  <input required className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-[#0F9D58] outline-none" value={editingBook.title} onChange={e => setEditingBook({...editingBook, title: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-2">Autor</label>
+                  <input required className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-[#0F9D58] outline-none" value={editingBook.author} onChange={e => setEditingBook({...editingBook, author: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-2">Categoria</label>
+                  <select className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-[#0F9D58] outline-none font-bold text-sm" value={editingBook.category} onChange={e => setEditingBook({...editingBook, category: e.target.value})}>
+                    {categories.map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-2">URL do PDF</label>
+                <input className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-[#0F9D58] outline-none" value={editingBook.pdfUrl || ''} onChange={e => setEditingBook({...editingBook, pdfUrl: e.target.value})} />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-2">Breve Resumo</label>
+                <textarea rows={3} className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-[#0F9D58] outline-none resize-none" value={editingBook.summary} onChange={e => setEditingBook({...editingBook, summary: e.target.value})} />
+              </div>
+              <div className="flex gap-4 pt-4">
+                <button type="button" onClick={() => setEditingBook(null)} className="flex-1 py-4 font-black text-gray-400 hover:text-gray-600 transition-colors">CANCELAR</button>
+                <button type="submit" disabled={isSaving} className="flex-1 bg-[#0F9D58] text-white py-4 rounded-2xl font-black shadow-xl shadow-green-100 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50">
+                  {isSaving ? 'SALVANDO...' : 'GUARDAR ALTERAÇÕES'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Adicionar Categoria */}
       {isAddingCategory && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="bg-white w-full max-w-sm rounded-[3rem] p-10 shadow-2xl animate-in zoom-in-95 duration-200">
