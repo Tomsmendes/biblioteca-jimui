@@ -1,13 +1,11 @@
-// Import the functions you need from the SDKs you need
+// Import the functions you need
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// Configuração do Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyBo06ZawAIBm48baJLIYsQleRQ0hfFs9ZQ",
+  apiKey: "SUA_API_KEY",
   authDomain: "biblioteca-jimui.firebaseapp.com",
   projectId: "biblioteca-jimui",
   storageBucket: "biblioteca-jimui.firebasestorage.app",
@@ -16,18 +14,22 @@ const firebaseConfig = {
   measurementId: "G-HRS7RQWJ8V"
 };
 
-// Initialize Firebase
+// Inicializa Firebase
 const app = initializeApp(firebaseConfig);
+
+// Analytics (opcional)
 const analytics = getAnalytics(app);
 
-// Inicializa Firestore
+// Firestore
 const db = getFirestore(app);
 
-// Habilita persistência offline
-enableIndexedDbPersistence(db).catch((err) => {
-  console.error("Falha ao ativar offline:", err.code);
-});
+// 🔥 Ativar modo offline
+enableIndexedDbPersistence(db)
+  .then(() => {
+    console.log("Persistência offline ativada");
+  })
+  .catch((err) => {
+    console.error("Erro ao ativar offline:", err.code);
+  });
 
 export { db };
-
-

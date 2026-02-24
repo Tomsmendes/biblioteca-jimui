@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { db } from '../services/db';
 import { User, UserRole } from '../types';
@@ -11,6 +10,7 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -29,8 +29,12 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
           setError('Email ou senha inválidos.');
         }
       } else {
-        if (!name || !email || !password) {
+        if (!name || !email || !password || !confirmPassword) {
           setError('Por favor, preencha todos os campos.');
+        } else if (password !== confirmPassword) {
+          setError('As senhas não coincidem.');
+        } else if (password.length < 6) {
+          setError('A senha deve ter pelo menos 6 caracteres.');
         } else {
           const newUser = await db.register(name, email, password);
           onAuthSuccess(newUser);
@@ -41,6 +45,13 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleModeSwitch = () => {
+    setMode(mode === 'login' ? 'register' : 'login');
+    setError('');
+    setPassword('');
+    setConfirmPassword('');
   };
 
   return (
@@ -103,6 +114,28 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
             />
           </div>
 
+          {/* Confirmar senha — apenas no registo */}
+          {mode === 'register' && (
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-2">Confirmar Senha</label>
+              <input 
+                type="password" 
+                required
+                className={`w-full px-5 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 outline-none transition-all font-medium ${
+                  confirmPassword && password !== confirmPassword
+                    ? 'ring-2 ring-red-400 focus:ring-red-400'
+                    : 'focus:ring-[#0F9D58]'
+                }`}
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+              />
+              {confirmPassword && password !== confirmPassword && (
+                <p className="text-red-400 text-[10px] font-bold mt-1 ml-2">As senhas não coincidem</p>
+              )}
+            </div>
+          )}
+
           <button 
             type="submit" 
             disabled={isLoading}
@@ -117,19 +150,17 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
             {mode === 'login' ? 'Ainda não tem conta?' : 'Já possui cadastro?'}
           </p>
           <button 
-            onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
+            onClick={handleModeSwitch}
             className="text-[#0F9D58] font-black mt-1 hover:underline underline-offset-4"
           >
             {mode === 'login' ? 'REGISTRE-SE AGORA' : 'FAÇA LOGIN'}
           </button>
         </div>
-        
-        {/* Info for testing */}
-        {mode === 'login' && (
+
           <div className="mt-6 text-[10px] text-gray-300 text-center italic">
             Dica: use admin@jimui.org / admin para entrar como Administrador.
           </div>
-        )}
+    
       </div>
     </div>
   );

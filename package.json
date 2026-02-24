@@ -9,10 +9,10 @@
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
-
   },
   "dependencies": {
     "@google/genai": "^1.40.0",
+    "firebase": "^12.9.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
@@ -24,4 +24,3 @@
     "vite": "^6.2.0"
   }
 }
-
